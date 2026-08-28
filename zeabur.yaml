@@ -1,0 +1,14 @@
+name: fault-offline-stats
+services:
+  - name: fault-offline-stats
+    runtime: python3.12
+    builder: standard
+    startCommand: gunicorn web_app:app --bind 0.0.0.0:$PORT
+    plan: free
+    env:
+      - key: API_USERNAME
+        value: mdx_yys_thys
+      - key: API_PASSWORD
+        value: mdx123456
+      - key: IS_CLOUD
+        value: "true"
