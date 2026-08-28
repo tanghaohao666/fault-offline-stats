@@ -1,0 +1,15 @@
+render:
+  - name: fault-offline-stats
+    type: web
+    runtime: python
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn web_app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: API_USERNAME
+        value: mdx_yys_thys
+      - key: API_PASSWORD
+        value: mdx123456
+      - key: IS_CLOUD
+        value: "true"

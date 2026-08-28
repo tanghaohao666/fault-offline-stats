@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>故障离线站点统计</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.container {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    padding: 50px 60px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+}
+h1 {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+.subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 36px;
+}
+.info-box {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+.info-box p {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.8;
+}
+.info-box span {
+    color: #667eea;
+    font-weight: 600;
+}
+.export-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 18px 50px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    width: 100%;
+    letter-spacing: 2px;
+}
+.export-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.55);
+}
+.export-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+.export-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+.status {
+    margin-top: 28px;
+    display: none;
+    text-align: left;
+}
+.status.active { display: block; }
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    width: 0%;
+    transition: width 0.4s ease;
+    border-radius: 3px;
+}
+.progress-text {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 12px;
+    min-height: 20px;
+}
+.log-box {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    max-height: 220px;
+    overflow-y: auto;
+    text-align: left;
+}
+.log-box .log-info { color: #9cdcfe; }
+.log-box .log-success { color: #6ec86e; }
+.log-box .log-warn { color: #dcdcaa; }
+.log-box .log-error { color: #f48771; }
+.download-btn {
+    display: none;
+    margin-top: 20px;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 14px 40px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+}
+.download-btn.show { display: inline-block; }
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(17, 153, 142, 0.55);
+}
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-box {
+    display: none;
+    margin-top: 16px;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    color: #c53030;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13px;
+}
+.error-box.show { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>故障离线站点统计</h1>
+    <p class="subtitle">一键导出充电站点故障与离线数据</p>
+
+    <div class="info-box">
+        <p>📡 数据来源：<span>满电行运营平台</span></p>
+        <p>🏢 统计企业：<span>华坤 · 驭驷 · 谢尔顿</span></p>
+        <p>📊 导出内容：<span>故障记录 + 离线记录</span></p>
+        <p>⏱ 预计耗时：<span>约 30-60 秒</span></p>
+    </div>
+
+    <button class="export-btn" id="exportBtn" onclick="startExport()">
+        🚀 开始导出数据
+    </button>
+
+    <div class="status" id="status">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">准备中...</div>
+        <div class="log-box" id="logBox"></div>
+        <button class="download-btn" id="downloadBtn" onclick="downloadFile()">
+            📥 下载 Excel 文件
+        </button>
+        <div class="error-box" id="errorBox"></div>
+    </div>
+</div>
+
+<script>
+let pollTimer = null;
+
+async function startExport() {
+    const btn = document.getElementById('exportBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>正在导出中...';
+
+    document.getElementById('status').classList.add('active');
+    document.getElementById('logBox').innerHTML = '';
+    document.getElementById('downloadBtn').classList.remove('show');
+    document.getElementById('errorBox').classList.remove('show');
+    document.getElementById('progressFill').style.width = '10%';
+
+    try {
+        const resp = await fetch('/api/start', { method: 'POST' });
+        if (!resp.ok) {
+            throw new Error('启动失败: HTTP ' + resp.status);
+        }
+        const data = await resp.json();
+        if (data.status === 'already_running') {
+            throw new Error('已有导出任务正在进行');
+        }
+        pollStatus();
+    } catch (e) {
+        showError(e.message);
+        resetBtn();
+    }
+}
+
+function pollStatus() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+        try {
+            const resp = await fetch('/api/status');
+            const data = await resp.json();
+
+            updateLogs(data.logs);
+            document.getElementById('progressText').textContent = data.progress || '处理中...';
+
+            if (data.error) {
+                showError(data.error);
+                clearInterval(pollTimer);
+                resetBtn();
+                return;
+            }
+
+            if (!data.running && data.file_path) {
+                clearInterval(pollTimer);
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('progressText').textContent = '✅ 导出完成！';
+                document.getElementById('downloadBtn').classList.add('show');
+                resetBtn();
+                return;
+            }
+
+            if (data.running) {
+                const currentText = data.progress || '';
+                let pct = 30;
+                if (currentText.includes('处理企业')) pct = 50;
+                if (currentText.includes('导出')) pct = 65;
+                if (currentText.includes('合并')) pct = 85;
+                if (currentText.includes('完成')) pct = 95;
+                document.getElementById('progressFill').style.width = pct + '%';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }, 1500);
+}
+
+function updateLogs(logs) {
+    const box = document.getElementById('logBox');
+    if (!logs || !logs.length) return;
+    const html = logs.map(l => {
+        let cls = 'log-info';
+        if (l.includes('完成') || l.includes('成功') || l.includes('已保存')) cls = 'log-success';
+        if (l.includes('错误') || l.includes('失败')) cls = 'log-error';
+        if (l.includes('跳过') || l.includes('警告')) cls = 'log-warn';
+        return '<div class="' + cls + '">' + escapeHtml(l) + '</div>';
+    }).join('');
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function downloadFile() {
+    window.location.href = '/api/download';
+}
+
+function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = '❌ ' + msg;
+    box.classList.add('show');
+}
+
+function resetBtn() {
+    const btn = document.getElementById('exportBtn');
+    btn.disabled = false;
+    btn.innerHTML = '🔄 重新导出';
+}
+</script>
+</body>
+</html>
